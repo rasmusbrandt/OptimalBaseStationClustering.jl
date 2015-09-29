@@ -6,6 +6,7 @@
 # clusters.
 
 function GeneralBranchAndBoundClustering(channel, network, f, t, D)
+    # Static params
     LargeScaleFadingCellAssignment!(channel, network)
     assignment = get_assignment(network)
     require_equal_num_MSs_per_cell(assignment)
@@ -16,8 +17,8 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
     Ps = get_transmit_powers(network); sigma2s = get_receiver_noise_powers(network)
     static_params = I::Int, K::Int, Kc::Int, M::Int, N::Int, d::Int, Ps::Vector{Float64}, sigma2s::Vector{Float64}, assignment
 
-    # Calculate pre-log optimal cluster size
-    _, B = findmax([ t(b, 1) for b in 1:I ])
+    # Scenario params
+    _, B = findmax([ t(b, 1., 1.) for b in 1:I ])
     scenario_params = f::Function, t::Function, D::Int, B::Int
 
     # Algorithm parameters
@@ -372,8 +373,9 @@ function bound!(node, channel, network, static_params, scenario_params, desired_
             end
 
             # Throughput bound
+            SNR = desired_powers[k]/sigma2s[k]
             rho = desired_powers[k]/(sigma2s[k] + irreducible_interference_power + reducible_interference_power)
-            throughput_bound = t(cluster_size_bound, rho)
+            throughput_bound = t(cluster_size_bound, SNR, rho)
             for n = 1:d
                 throughput_bounds[k,n] = throughput_bound
             end

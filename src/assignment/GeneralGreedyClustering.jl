@@ -11,6 +11,7 @@
 # pre-log factor.
 
 function GeneralGreedyClustering(channel, network, f, t, D)
+    # Static params
     LargeScaleFadingCellAssignment!(channel, network)
     assignment = get_assignment(network)
     require_equal_num_MSs_per_cell(assignment)
@@ -19,7 +20,7 @@ function GeneralGreedyClustering(channel, network, f, t, D)
     require_equal_num_MS_antennas(network); N = get_num_MS_antennas(network)[1]
     require_equal_num_streams(network); d = get_num_streams(network)[1]
     Ps = get_transmit_powers(network); sigma2s = get_receiver_noise_powers(network)
-    static_params = I::Int, K::Int, Kc::Int, M::Int, N::Int, d::Int, Ps::Vector{Float64}, sigma2s::Vector{Float64}
+    static_params = I::Int, K::Int, Kc::Int, M::Int, N::Int, d::Int, Ps::Vector{Float64}, sigma2s::Vector{Float64}, assignment
 
     # Cluster assignment matrix
     partition_matrix = eye(Int, I, I)
@@ -70,8 +71,9 @@ function GeneralGreedyClustering(channel, network, f, t, D)
             for j in outside_all_BSs
                 irreducible_interference_power += interfering_powers[j,k]
             end
+            SNR = desired_powers[k]/sigma2s[k]
             rho = desired_powers[k]/(sigma2s[k] + irreducible_interference_power)
-            throughputs[k,:] = t(cluster_size, rho)
+            throughputs[k,:] = t(cluster_size, SNR, rho)
         end; end
     end
     objective = f(throughputs)
