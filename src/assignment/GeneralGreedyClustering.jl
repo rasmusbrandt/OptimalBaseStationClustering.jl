@@ -22,6 +22,10 @@ function GeneralGreedyClustering(channel, network, f, t, D)
     Ps = get_transmit_powers(network); sigma2s = get_receiver_noise_powers(network)
     static_params = I::Int, K::Int, Kc::Int, M::Int, N::Int, d::Int, Ps::Vector{Float64}, sigma2s::Vector{Float64}, assignment
 
+    # Scenario params
+    _, B = findmax([ t(b, 1., 1.) for b in 1:I ])
+    scenario_params = f::Function, t::Function, D::Int, B::Int
+
     # Cluster assignment matrix
     partition_matrix = eye(Int, I, I)
 
@@ -58,34 +62,17 @@ function GeneralGreedyClustering(channel, network, f, t, D)
         # Never consider this link again
         F[i,j] = -Inf
     end
-    partition = Partition(partition_matrix)
     a = restricted_growth_string(partition_matrix)
-    desired_powers, interfering_powers =
-        precompute_powers(channel, assignment, static_params)
-    throughputs = zeros(Float64, K, d)
-    for block in partition.blocks
-        outside_all_BSs = setdiff(IntSet(1:I), block.elements)
-        cluster_size = length(block.elements)
-        for i in block.elements; for k in served_MS_ids(i, assignment)
-            irreducible_interference_power = Float64(0)
-            for j in outside_all_BSs
-                irreducible_interference_power += interfering_powers[j,k]
-            end
-            SNR = desired_powers[k]/sigma2s[k]
-            rho = desired_powers[k]/(sigma2s[k] + irreducible_interference_power)
-            throughputs[k,:] = t(cluster_size, SNR, rho)
-        end; end
-    end
-    objective = f(throughputs)
-    Lumberjack.info("GeneralGreedyClustering finished.",
-        Dict(:objective => objective, :a => a))
+    partition = Partition(partition_matrix)
+    throughputs_ = throughputs(partition, channel, static_params, scenario_params)
+    Lumberjack.info("GeneralGreedyClustering finished.", Dict(:objective => f(throughputs_), :a => a))
 
     # Return results
     results = AssignmentResults()
-    results["throughputs"] = throughputs
+    results["throughputs"] = throughputs_
     results["a"] = a
     results["num_clusters"] = 1 + maximum(a)
-    results["avg_cluster_size"] = avg_cluster_size(a)
+    results["average_cluster_size"] = average_cluster_size(a)
     results["num_objective_calculations"] = num_objective_calculations
     return results
 end

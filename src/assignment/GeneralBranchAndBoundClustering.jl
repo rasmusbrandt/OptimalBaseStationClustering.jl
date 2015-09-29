@@ -25,6 +25,8 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
     aux_params = get_aux_assignment_params(network)
     @defaultize_param! aux_params "GeneralBranchAndBoundClustering:branching_rule" :dfs
     branching_rule = aux_params["GeneralBranchAndBoundClustering:branching_rule"]
+    @defaultize_param! aux_params "GeneralBranchAndBoundClustering:improve_initial_incumbent" true
+    improve_initial_incumbent = aux_params["GeneralBranchAndBoundClustering:improve_initial_incumbent"]
     @defaultize_param! aux_params "GeneralBranchAndBoundClustering:max_abs_optimality_gap" 0.
     max_abs_optimality_gap = aux_params["GeneralBranchAndBoundClustering:max_abs_optimality_gap"]
     @defaultize_param! aux_params "GeneralBranchAndBoundClustering:max_rel_optimality_gap" 0.
@@ -35,13 +37,12 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
     # Lumberjack.debug("GeneralBranchAndBoundClustering started.")
 
     # Precompute desired and interfering powers
-    desired_powers, interfering_powers =
-        precompute_powers(channel, assignment, static_params)
+    desired_powers, interfering_powers = compute_powers(channel, static_params)
 
     # Initial bounds
     best_upper_bound = Inf
     incumbent_throughputs, incumbent_a, incumbent_objective =
-        initial_incumbent(channel, network, static_params, scenario_params)
+        initial_incumbent(channel, network, static_params, scenario_params, improve_initial_incumbent)
 
     # Eager branch and bound
     num_iters = 0; num_bounded_nodes = 0
@@ -146,7 +147,7 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
     results["throughputs"] = incumbent_throughputs
     results["a"] = incumbent_a
     results["num_clusters"] = 1 + maximum(incumbent_a)
-    results["avg_cluster_size"] = avg_cluster_size(incumbent_a)
+    results["average_cluster_size"] = average_cluster_size(incumbent_a)
     results["num_iters"] = num_iters
     results["num_bounded_nodes"] = num_bounded_nodes
     results["lower_bound_evolution"] = reshape(lower_bound_evolution, (1, 1, length(lower_bound_evolution)))
@@ -155,33 +156,40 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
     return results
 end
 
-function initial_incumbent(channel, network, static_params, scenario_params)
+function initial_incumbent(channel, network,
+    static_params, scenario_params, improve_initial_incumbent)
+
     I, K, Kc, M, N, d, Ps, sigma2s, assignment = static_params
     f, t, D, B = scenario_params
     incumbent_throughputs = zeros(Float64, K, d)
     incumbent_a = zeros(Int, I)
-    incumbent_objective = -Inf
-    heuristic_results = GeneralGreedyClustering(channel, network, f, t, D)
-    heuristic_objective = f(heuristic_results["throughputs"])
-    if heuristic_objective > incumbent_objective
-        incumbent_throughputs = heuristic_results["throughputs"]
-        incumbent_a = heuristic_results["a"]
-        incumbent_objective = heuristic_objective
-    end
-    # Lumberjack.debug("Potential incumbent throughputs calculated.", { :heuristic => heuristic, :incumbent_objective => incumbent_objective })
+    incumbent_objective = 0.
 
-    # Optimal solution from previous branch and bound round
-    if has_aux_network_param(network, "GeneralBranchAndBoundClustering:cache:optimal_a")
-        previous_a = get_aux_network_param(network, "GeneralBranchAndBoundClustering:cache:optimal_a")
-        previous_partition = Partition(previous_a)
-        previous_throughputs = alpha(network, previous_partition).*r(channel, network, previous_partition)
-        previous_objective = f(previous_throughputs)
-        if previous_objective > incumbent_objective
-            incumbent_throughputs = previous_throughputs
-            incumbent_a = previous_a
-            incumbent_objective = previous_objective
+    if improve_initial_incumbent
+        # Solution from heuristic
+        heuristic_results = GeneralGreedyClustering(channel, network, f, t, D)
+        heuristic_objective = f(heuristic_results["throughputs"])
+        if heuristic_objective > incumbent_objective
+            incumbent_throughputs = heuristic_results["throughputs"]
+            incumbent_a = heuristic_results["a"]
+            incumbent_objective = heuristic_objective
+        end
+        # Lumberjack.debug("Potential incumbent throughputs calculated.", { :heuristic => heuristic, :incumbent_objective => incumbent_objective })
+
+        # Optimal solution from previous branch and bound round
+        if has_aux_network_param(network, "GeneralBranchAndBoundClustering:cache:optimal_a")
+            previous_a = get_aux_network_param(network, "GeneralBranchAndBoundClustering:cache:optimal_a")
+            previous_partition = Partition(previous_a)
+            previous_throughputs = throughputs(previous_partition, channel, static_params, scenario_params)
+            previous_objective = f(previous_throughputs)
+            if previous_objective > incumbent_objective
+                incumbent_throughputs = previous_throughputs
+                incumbent_a = previous_a
+                incumbent_objective = previous_objective
+            end
         end
     end
+
     incumbent_throughputs, incumbent_a, incumbent_objective
 end
 
