@@ -44,7 +44,7 @@ function GeneralGreedyClustering(channel, network, f, t, D)
     end; end
 
     # Greedily build clusters based on strongest sum interference between cells
-    num_objective_calculations = 0
+    num_constraint_checks = 0
     while !all(F .== -Inf)
         # Find strongest interfering link that is still active
         _, idx = findmax(F)
@@ -58,6 +58,7 @@ function GeneralGreedyClustering(channel, network, f, t, D)
             partition_matrix[i_cluster,j_cluster] = 1
             partition_matrix[j_cluster,i_cluster] = 1
         end
+        num_constraint_checks += 1
 
         # Never consider this link again
         F[i,j] = -Inf
@@ -73,6 +74,6 @@ function GeneralGreedyClustering(channel, network, f, t, D)
     results["a"] = a
     results["num_clusters"] = reshape([1 + maximum(a)], 1, 1)
     results["average_cluster_size"] = reshape([average_cluster_size(a)], 1, 1)
-    results["num_objective_calculations"] = reshape([num_objective_calculations], 1, 1)
+    results["num_constraint_checks"] = reshape([num_constraint_checks], 1, 1)
     return results
 end
