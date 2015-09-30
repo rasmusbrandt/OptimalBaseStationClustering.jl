@@ -146,10 +146,10 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
     results = AssignmentResults()
     results["throughputs"] = incumbent_throughputs
     results["a"] = incumbent_a
-    results["num_clusters"] = 1 + maximum(incumbent_a)
-    results["average_cluster_size"] = average_cluster_size(incumbent_a)
-    results["num_iters"] = num_iters
-    results["num_bounded_nodes"] = num_bounded_nodes
+    results["num_clusters"] = reshape([1 + maximum(incumbent_a)], 1, 1)
+    results["average_cluster_size"] = reshape([average_cluster_size(incumbent_a)], 1, 1)
+    results["num_iters"] = reshape([num_iters], 1, 1)
+    results["num_bounded_nodes"] = reshape([num_bounded_nodes], 1, 1)
     results["lower_bound_evolution"] = reshape(lower_bound_evolution, (1, 1, length(lower_bound_evolution)))
     results["upper_bound_evolution"] = reshape(upper_bound_evolution, (1, 1, length(upper_bound_evolution)))
     results["fathoming_evolution"] = reshape(fathoming_evolution, (1, 1, length(fathoming_evolution)))

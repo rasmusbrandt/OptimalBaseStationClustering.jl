@@ -71,8 +71,8 @@ function GeneralGreedyClustering(channel, network, f, t, D)
     results = AssignmentResults()
     results["throughputs"] = throughputs_
     results["a"] = a
-    results["num_clusters"] = 1 + maximum(a)
-    results["average_cluster_size"] = average_cluster_size(a)
-    results["num_objective_calculations"] = num_objective_calculations
+    results["num_clusters"] = reshape([1 + maximum(a)], 1, 1)
+    results["average_cluster_size"] = reshape([average_cluster_size(a)], 1, 1)
+    results["num_objective_calculations"] = reshape([num_objective_calculations], 1, 1)
     return results
 end
