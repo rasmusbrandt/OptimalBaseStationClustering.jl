@@ -21,7 +21,9 @@ const Ndrops = 1
 const Nsim = 1
 
 # Utility model and specialized branch and bound
-alpha(C) = C/I - ((M + Kc*(N + d))*C + Kc*M*C^2)/num_coherence_symbols
+f1 = 1/I - (M + Kc*(N + d))/num_coherence_symbols
+f2 = -Kc*M/num_coherence_symbols
+alpha(C) = (f1 + f2*C)*C
 t(C, SNR, SINR) = (1 - beta_network_sdma)*alpha(C)*exp_times_E1(1 + SNR) + beta_network_sdma*exp_times_E1(1 + SINR)
 D = floor(Int, (M + N - d)/(Kc*d)) # from Liu2013
 f(ts) = sum(ts) # sum throughput
