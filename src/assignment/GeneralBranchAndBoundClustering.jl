@@ -290,8 +290,6 @@ function bound!(node, channel, network, static_params, scenario_params,
 
     # Prelog, rate, and throughput bounds
     node_is_leaf = is_leaf(node, I)
-    prelog_bounds_cluster_sdma = zeros(Float64, K)
-    prelog_bounds_network_sdma = zeros(Float64, K)
     throughput_bounds = zeros(Float64, K, d)
     for block in pseudo_partition.blocks
         cluster_size = length(block.elements)
@@ -357,7 +355,7 @@ function bound!(node, channel, network, static_params, scenario_params,
                     # This BS is not clustered.
                     cluster_size_bound = nonclustered_BS_cluster_size_bound
 
-                    # I cannot joint any BS that belong to a full cluster, so
+                    # I cannot join any BS that belong to a full cluster, so
                     # those BSs contribute irreducible interference.
                     irreducible_interference_power =
                         sum_irreducible_interference_power(k, BSs_in_full_clusters, interfering_powers)
