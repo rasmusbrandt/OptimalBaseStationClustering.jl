@@ -38,6 +38,7 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
 
     # Precompute desired and interfering powers
     desired_powers, interfering_powers = compute_powers(channel, static_params)
+    scratch = Array(Float64, I)
 
     # Initial bounds
     best_upper_bound = Inf
@@ -81,7 +82,8 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
         fathomed_subtree_size = 0
         for child in branch(parent)
             throughput_bounds =
-                bound!(child, channel, network, static_params, scenario_params, desired_powers, interfering_powers)
+                bound!(child, channel, network, static_params, scenario_params,
+                       desired_powers, interfering_powers, scratch)
             num_bounded_nodes += 1
 
             # Worthwhile investigating this subtree/leaf more?
@@ -219,7 +221,8 @@ end
 # Initialize the live structure by creating the root node.
 function initialize_live(channel, network, static_params, scenario_params, desired_powers, interfering_powers)
     root = BranchAndBoundNode([0], Inf)
-    bound!(root, channel, network, static_params, scenario_params, desired_powers, interfering_powers)
+    bound!(root, channel, network, static_params, scenario_params,
+           desired_powers, interfering_powers, zeros(Float64, get_num_BSs(network)))
     # Lumberjack.debug("Root created.", { :node => root })
     return [ root ]
 end
@@ -244,7 +247,8 @@ end
 
 # Bound works by optimistically removing interference for unclustered BSs.
 function bound!(node, channel, network, static_params, scenario_params,
-    desired_powers::Vector{Float64}, interfering_powers::Matrix{Float64})
+    desired_powers::Vector{Float64}, interfering_powers::Matrix{Float64},
+    scratch::Vector{Float64})
 
     I, K, Kc, M, N, d, Ps, sigma2s, assignment = static_params
     f, t, D, B = scenario_params
@@ -254,7 +258,6 @@ function bound!(node, channel, network, static_params, scenario_params,
     all_BSs = IntSet(1:I)
     N_clustered = length(node.a); N_unclustered = I - N_clustered
     clustered_BSs = IntSet(1:N_clustered); unclustered_BSs = IntSet(N_clustered+1:I)
-    reducible_interference_levels1 = Array(Float64, N_unclustered)
 
     # For looping over clusters, we create a pseudo partition, where the
     # unclustered BSs belong to singleton blocks.
@@ -320,7 +323,6 @@ function bound!(node, channel, network, static_params, scenario_params,
         outside_clustered_BSs = setdiff(clustered_BSs, block.elements)
         outside_BSs_in_nonfull_clusters = setdiff(BSs_in_nonfull_clusters, block.elements)
         N_outside_BSs_in_nonfull_clusters = length(outside_BSs_in_nonfull_clusters)
-        reducible_interference_levels2 = Array(Float64, N_outside_BSs_in_nonfull_clusters)
 
         # Get appropriate bounds for all MSs in this cluster.
         for i in block.elements; for k in served_MS_ids(i, assignment)
@@ -346,7 +348,7 @@ function bound!(node, channel, network, static_params, scenario_params,
                     # disjointness of the clusters here.
                     reducible_interference_power =
                         sum_reducible_interference_power(k, unclustered_BSs, N_unclustered - N_available_slots,
-                                                         interfering_powers, reducible_interference_levels1)
+                                                         interfering_powers, sub(scratch, 1:N_unclustered))
                 else
                     # This BS is not clustered.
                     cluster_size_bound = nonclustered_BS_cluster_size_bound
@@ -360,7 +362,7 @@ function bound!(node, channel, network, static_params, scenario_params,
                     # and assume that this interference is reducible.
                     reducible_interference_power =
                         sum_reducible_interference_power(k, outside_BSs_in_nonfull_clusters, N_outside_BSs_in_nonfull_clusters - N_available_slots,
-                                                         interfering_powers, reducible_interference_levels2)
+                                                         interfering_powers, sub(scratch, 1:N_outside_BSs_in_nonfull_clusters))
                 end
             end
 
