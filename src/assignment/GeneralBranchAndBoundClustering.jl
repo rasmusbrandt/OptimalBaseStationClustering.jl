@@ -38,6 +38,7 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
 
     # Precompute desired and interfering powers
     desired_powers, interfering_powers = compute_powers(channel, static_params)
+    SNRs = [ desired_powers[k]/sigma2s[k] for k in 1:K ]
     scratch = Array(Float64, I)
 
     # Initial bounds
@@ -49,7 +50,8 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
     num_iters = 0; num_bounded_nodes = 0
     abs_conv_crit = 0.; premature_ending = false
     lower_bound_evolution = Float64[]; upper_bound_evolution = Float64[]; fathoming_evolution = Int[]
-    live = initialize_live(channel, network, static_params, scenario_params, desired_powers, interfering_powers)
+    live = initialize_live(channel, network, static_params, scenario_params,
+                           desired_powers, interfering_powers, SNRs)
     while length(live) > 0
         num_iters += 1
 
@@ -83,7 +85,7 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
         for child in branch(parent)
             throughput_bounds =
                 bound!(child, channel, network, static_params, scenario_params,
-                       desired_powers, interfering_powers, scratch)
+                       desired_powers, interfering_powers, SNRs, scratch)
             num_bounded_nodes += 1
 
             # Worthwhile investigating this subtree/leaf more?
@@ -219,10 +221,12 @@ function subtree_size(depth, m, I)
 end
 
 # Initialize the live structure by creating the root node.
-function initialize_live(channel, network, static_params, scenario_params, desired_powers, interfering_powers)
+function initialize_live(channel, network, static_params, scenario_params,
+                         desired_powers, interfering_powers, SNRs)
     root = BranchAndBoundNode([0], Inf)
     bound!(root, channel, network, static_params, scenario_params,
-           desired_powers, interfering_powers, zeros(Float64, get_num_BSs(network)))
+           desired_powers, interfering_powers, SNRs,
+           zeros(Float64, get_num_BSs(network)))
     # Lumberjack.debug("Root created.", { :node => root })
     return [ root ]
 end
@@ -248,7 +252,7 @@ end
 # Bound works by optimistically removing interference for unclustered BSs.
 function bound!(node, channel, network, static_params, scenario_params,
     desired_powers::Vector{Float64}, interfering_powers::Matrix{Float64},
-    scratch::Vector{Float64})
+    SNRs::Vector{Float64}, scratch::Vector{Float64})
 
     I, K, Kc, M, N, d, Ps, sigma2s, assignment = static_params
     f, t, D, B = scenario_params
@@ -367,9 +371,8 @@ function bound!(node, channel, network, static_params, scenario_params,
             end
 
             # Throughput bound
-            SNR = desired_powers[k]/sigma2s[k]
             rho = desired_powers[k]/(sigma2s[k] + irreducible_interference_power + reducible_interference_power)
-            throughput_bound = t(cluster_size_bound, SNR, rho)
+            throughput_bound = t(cluster_size_bound, SNRs[k], rho)
             for n = 1:d
                 throughput_bounds[k,n] = throughput_bound
             end
