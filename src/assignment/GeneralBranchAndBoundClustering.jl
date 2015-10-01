@@ -330,6 +330,7 @@ function bound!(node, channel, network, static_params, scenario_params,
 
                 # All BSs outside my cluster contribute irreducible interference.
                 irreducible_interference_power = sum_irreducible_interference_power(k, outside_all_BSs, interfering_powers)
+                reducible_interference_power = 0.
             else
                 # The bounds depends on if this BS is clustered or not.
                 if i <= N_clustered
