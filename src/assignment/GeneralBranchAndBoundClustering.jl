@@ -243,7 +243,9 @@ function branch(parent)
 end
 
 # Bound works by optimistically removing interference for unclustered BSs.
-function bound!(node, channel, network, static_params, scenario_params, desired_powers, interfering_powers)
+function bound!(node, channel, network, static_params, scenario_params,
+    desired_powers::Vector{Float64}, interfering_powers::Matrix{Float64})
+
     I, K, Kc, M, N, d, Ps, sigma2s, assignment = static_params
     f, t, D, B = scenario_params
 
@@ -322,17 +324,12 @@ function bound!(node, channel, network, static_params, scenario_params, desired_
 
         # Get appropriate bounds for all MSs in this cluster.
         for i in block.elements; for k in served_MS_ids(i, assignment)
-            irreducible_interference_power = Float64(0)
-            reducible_interference_power = Float64(0)
-
             # Leaves get true values, other nodes get bound.
             if node_is_leaf
                 cluster_size_bound = cluster_size
 
                 # All BSs outside my cluster contribute irreducible interference.
-                for j in outside_all_BSs
-                    irreducible_interference_power += interfering_powers[j,k]
-                end
+                irreducible_interference_power = sum_irreducible_interference_power(k, outside_all_BSs, interfering_powers)
             else
                 # The bounds depends on if this BS is clustered or not.
                 if i <= N_clustered
@@ -340,43 +337,29 @@ function bound!(node, channel, network, static_params, scenario_params, desired_
                     cluster_size_bound = clustered_BS_cluster_size_bound
 
                     # Clustered BSs outside my cluster contribute irreducible interference.
-                    for j in outside_clustered_BSs
-                        irreducible_interference_power += interfering_powers[j,k]
-                    end
+                    irreducible_interference_power =
+                        sum_irreducible_interference_power(k, outside_clustered_BSs, interfering_powers)
 
                     # The bound is now due to picking the N_available_slots strongest interferers (that are not clustered)
                     # and assuming that this interference is reducible. This is a bound since we are not ensuring the
                     # disjointness of the clusters here.
-                    idx = 1
-                    for j in unclustered_BSs
-                        reducible_interference_levels1[idx] = interfering_powers[j,k]
-                        idx += 1
-                    end
-                    sort!(reducible_interference_levels1)
-                    for idx in 1:(N_unclustered - N_available_slots)
-                        reducible_interference_power += reducible_interference_levels1[idx]
-                    end
+                    reducible_interference_power =
+                        sum_reducible_interference_power(k, unclustered_BSs, N_unclustered - N_available_slots,
+                                                         interfering_powers, reducible_interference_levels1)
                 else
                     # This BS is not clustered.
                     cluster_size_bound = nonclustered_BS_cluster_size_bound
 
                     # I cannot joint any BS that belong to a full cluster, so
                     # those BSs contribute irreducible interference.
-                    for j in BSs_in_full_clusters
-                        irreducible_interference_power += interfering_powers[j,k]
-                    end
+                    irreducible_interference_power =
+                        sum_irreducible_interference_power(k, BSs_in_full_clusters, interfering_powers)
 
                     # We now pick the N_available_slots strongest interferers (which do not belong to full clusters),
                     # and assume that this interference is reducible.
-                    idx = 1
-                    for j in outside_BSs_in_nonfull_clusters
-                        reducible_interference_levels2[idx] = interfering_powers[j,k]
-                        idx += 1
-                    end
-                    sort!(reducible_interference_levels2)
-                    for idx in 1:(N_outside_BSs_in_nonfull_clusters - N_available_slots)
-                        reducible_interference_power += reducible_interference_levels2[idx]
-                    end
+                    reducible_interference_power =
+                        sum_reducible_interference_power(k, outside_BSs_in_nonfull_clusters, N_outside_BSs_in_nonfull_clusters - N_available_slots,
+                                                         interfering_powers, reducible_interference_levels2)
                 end
             end
 
@@ -396,4 +379,26 @@ function bound!(node, channel, network, static_params, scenario_params, desired_
     # Lumberjack.debug("Bounding.", { :node => node })
 
     return throughput_bounds
+end
+
+function sum_irreducible_interference_power(k, from_BSs, interfering_powers)
+    s = Float64(0)
+    for j in from_BSs
+        s += interfering_powers[j,k]
+    end
+    s
+end
+
+function sum_reducible_interference_power(k, from_BSs, N_available, interfering_powers, reducible_interference_levels)
+    s = Float64(0)
+    idx = 1
+    for j in from_BSs
+        reducible_interference_levels[idx] = interfering_powers[j,k]
+        idx += 1
+    end
+    sort!(reducible_interference_levels)
+    for idx in 1:N_available
+        s += reducible_interference_levels[idx]
+    end
+    s
 end
