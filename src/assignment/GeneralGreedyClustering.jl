@@ -10,7 +10,7 @@
 # cluster sizes will be given by IA feasibility, and not by the overhead
 # pre-log factor.
 
-function GeneralGreedyClustering(channel, network, f, t, D)
+function GeneralGreedyClustering(channel, network, f, t, D, B = 0)
     # Static params
     LargeScaleFadingCellAssignment!(channel, network)
     assignment = get_assignment(network)
@@ -20,11 +20,10 @@ function GeneralGreedyClustering(channel, network, f, t, D)
     require_equal_num_MS_antennas(network); N = get_num_MS_antennas(network)[1]
     require_equal_num_streams(network); d = get_num_streams(network)[1]
     Ps = get_transmit_powers(network); sigma2s = get_receiver_noise_powers(network)
-    static_params = I::Int, K::Int, Kc::Int, M::Int, N::Int, d::Int, Ps::Vector{Float64}, sigma2s::Vector{Float64}, assignment
+    static_params = I::Int, K::Int, Kc::Int, M::Int, N::Int, d::Int, D::Int, B::Int, Ps::Vector{Float64}, sigma2s::Vector{Float64}, assignment
 
-    # Scenario params
-    _, B = findmax([ t(b, 1., 1.) for b in 1:I ])
-    scenario_params = f::Function, t::Function, D::Int, B::Int
+    # Utility params
+    utility_params = f::Function, t::Function
 
     # Cluster assignment matrix
     partition_matrix = eye(Int, I, I)
@@ -65,7 +64,7 @@ function GeneralGreedyClustering(channel, network, f, t, D)
     end
     a = restricted_growth_string(partition_matrix)
     partition = Partition(partition_matrix)
-    throughputs_ = throughputs(partition, channel, static_params, scenario_params)
+    throughputs_ = throughputs(partition, channel, static_params, utility_params)
     Lumberjack.info("GeneralGreedyClustering finished.", Dict(:objective => f(throughputs_), :a => a))
 
     # Return results

@@ -1,6 +1,6 @@
-function throughputs(partition, channel, static_params, scenario_params)
-    I, K, Kc, M, N, d, Ps, sigma2s, assignment = static_params
-    f, t, D, B = scenario_params
+function throughputs(partition, channel, static_params, utility_params)
+    I, K, Kc, M, N, d, D, B, Ps, sigma2s, assignment = static_params
+    f, t = utility_params
 
     desired_powers, interfering_powers = compute_powers(channel, static_params)
 
@@ -13,16 +13,15 @@ function throughputs(partition, channel, static_params, scenario_params)
             for j in outside_all_BSs
                 irreducible_interference_power += interfering_powers[j,k]
             end
-            SNR = desired_powers[k]/sigma2s[k]
             rho = desired_powers[k]/(sigma2s[k] + irreducible_interference_power)
-            throughputs[k,:] = t(cluster_size, SNR, rho)
+            throughputs[k,:] = t(cluster_size, rho)
         end; end
     end
     throughputs
 end
 
 function compute_powers(channel, static_params)
-    I, K, Kc, M, N, d, Ps, sigma2s, assignment = static_params
+    I, K, Kc, M, N, d, D, B, Ps, sigma2s, assignment = static_params
     desired_powers = Array(Float64, K)
     interfering_powers = Array(Float64, I, K)
     for i = 1:I; for k in served_MS_ids(i, assignment)

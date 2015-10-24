@@ -5,7 +5,7 @@
 # restricted growth strings that describe all possible base station
 # clusters.
 
-function GeneralBranchAndBoundClustering(channel, network, f, t, D)
+function GeneralBranchAndBoundClustering(channel, network, f, t, D, B = 0)
     # Static params
     LargeScaleFadingCellAssignment!(channel, network)
     assignment = get_assignment(network)
@@ -15,11 +15,10 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
     require_equal_num_MS_antennas(network); N = get_num_MS_antennas(network)[1]
     require_equal_num_streams(network); d = get_num_streams(network)[1]
     Ps = get_transmit_powers(network); sigma2s = get_receiver_noise_powers(network)
-    static_params = I::Int, K::Int, Kc::Int, M::Int, N::Int, d::Int, Ps::Vector{Float64}, sigma2s::Vector{Float64}, assignment
+    static_params = I::Int, K::Int, Kc::Int, M::Int, N::Int, d::Int, D::Int, B::Int, Ps::Vector{Float64}, sigma2s::Vector{Float64}, assignment
 
-    # Scenario params
-    _, B = findmax([ t(b, 1., 1.) for b in 1:I ])
-    scenario_params = f::Function, t::Function, D::Int, B::Int
+    # Utility params
+    utility_params = f::Function, t::Function
 
     # Algorithm parameters
     aux_params = get_aux_assignment_params(network)
@@ -38,20 +37,19 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
 
     # Precompute desired and interfering powers
     desired_powers, interfering_powers = compute_powers(channel, static_params)
-    SNRs = [ desired_powers[k]/sigma2s[k] for k in 1:K ]
     scratch = Array(Float64, I)
 
     # Initial bounds
     best_upper_bound = Inf
     incumbent_throughputs, incumbent_a, incumbent_objective =
-        initial_incumbent(channel, network, static_params, scenario_params, improve_initial_incumbent)
+        initial_incumbent(channel, network, static_params, utility_params, improve_initial_incumbent)
 
     # Eager branch and bound
     num_iters = 0; num_bounded_nodes = 0
     abs_conv_crit = 0.; premature_ending = false
     lower_bound_evolution = Float64[]; upper_bound_evolution = Float64[]; fathoming_evolution = Int[]
-    live = initialize_live(channel, network, static_params, scenario_params,
-                           desired_powers, interfering_powers, SNRs)
+    live = initialize_live(channel, network, static_params, utility_params,
+                           desired_powers, interfering_powers)
     while length(live) > 0
         num_iters += 1
 
@@ -84,8 +82,8 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
         fathomed_subtree_size = 0
         for child in branch(parent)
             throughput_bounds =
-                bound!(child, channel, network, static_params, scenario_params,
-                       desired_powers, interfering_powers, SNRs, scratch)
+                bound!(child, channel, network, static_params, utility_params,
+                       desired_powers, interfering_powers, scratch)
             num_bounded_nodes += 1
 
             # Worthwhile investigating this subtree/leaf more?
@@ -161,10 +159,10 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D)
 end
 
 function initial_incumbent(channel, network,
-    static_params, scenario_params, improve_initial_incumbent)
+    static_params, utility_params, improve_initial_incumbent)
 
-    I, K, Kc, M, N, d, Ps, sigma2s, assignment = static_params
-    f, t, D, B = scenario_params
+    I, K, Kc, M, N, d, D, B, Ps, sigma2s, assignment = static_params
+    f, t = utility_params
     incumbent_throughputs = zeros(Float64, K, d)
     incumbent_a = zeros(Int, I)
     incumbent_objective = 0.
@@ -184,7 +182,7 @@ function initial_incumbent(channel, network,
         if has_aux_network_param(network, "GeneralBranchAndBoundClustering:cache:optimal_a")
             previous_a = get_aux_network_param(network, "GeneralBranchAndBoundClustering:cache:optimal_a")
             previous_partition = Partition(previous_a)
-            previous_throughputs = throughputs(previous_partition, channel, static_params, scenario_params)
+            previous_throughputs = throughputs(previous_partition, channel, static_params, utility_params)
             previous_objective = f(previous_throughputs)
             if previous_objective > incumbent_objective
                 incumbent_throughputs = previous_throughputs
@@ -221,11 +219,11 @@ function subtree_size(depth, m, I)
 end
 
 # Initialize the live structure by creating the root node.
-function initialize_live(channel, network, static_params, scenario_params,
-                         desired_powers, interfering_powers, SNRs)
+function initialize_live(channel, network, static_params, utility_params,
+                         desired_powers, interfering_powers)
     root = BranchAndBoundNode([0], Inf)
-    bound!(root, channel, network, static_params, scenario_params,
-           desired_powers, interfering_powers, SNRs,
+    bound!(root, channel, network, static_params, utility_params,
+           desired_powers, interfering_powers,
            zeros(Float64, get_num_BSs(network)))
     # Lumberjack.debug("Root created.", { :node => root })
     return [ root ]
@@ -250,12 +248,12 @@ function branch(parent)
 end
 
 # Bound works by optimistically removing interference for unclustered BSs.
-function bound!(node, channel, network, static_params, scenario_params,
+function bound!(node, channel, network, static_params, utility_params,
     desired_powers::Vector{Float64}, interfering_powers::Matrix{Float64},
-    SNRs::Vector{Float64}, scratch::Vector{Float64})
+    scratch::Vector{Float64})
 
-    I, K, Kc, M, N, d, Ps, sigma2s, assignment = static_params
-    f, t, D, B = scenario_params
+    I, K, Kc, M, N, d, D, B, Ps, sigma2s, assignment = static_params
+    f, t = utility_params
 
     # Preallocate aggregated interfering powers
     aggregated = fill(0., 2)
@@ -301,26 +299,11 @@ function bound!(node, channel, network, static_params, scenario_params,
         # Enforce hard cluster size constraint
         if cluster_size > D
             for i in block.elements; for k in served_MS_ids(i, assignment)
-                for n = 1:d
-                    throughput_bounds[k,n] = -Inf
+                @simd for n = 1:d
+                    @inbounds throughput_bounds[k,n] = -Inf
                 end
             end; end
             break
-        end
-
-        # For the prelog bound, we want the number of BSs in this cluster
-        # to be close to the optimal number.
-        if cluster_size < B
-            # There is still space, so add more BSs to this cluster. We never want more than B
-            # BSs in our clusters, because that is when the prelog starts going down again.
-            clustered_BS_cluster_size_bound = min(cluster_size + N_unclustered, B)
-            nonclustered_BS_cluster_size_bound = min(cluster_size + N_BSs_in_nonfull_clusters, B)
-        else
-            # We (potentially) already have too many BSs in this cluster,
-            # thus our prelog can only go down by adding more. Bound the
-            # prelog by our current value.
-            clustered_BS_cluster_size_bound = cluster_size
-            nonclustered_BS_cluster_size_bound = cluster_size
         end
 
         # Stuff needed for rate bounds
@@ -333,18 +316,13 @@ function bound!(node, channel, network, static_params, scenario_params,
         for i in block.elements; for k in served_MS_ids(i, assignment)
             @inbounds aggregated[1] = 0.; @inbounds aggregated[2] = 0.
 
-            # Leaves get true values, other nodes get bound.
+            # Rho bound (solution to supermodular optimization problem)
             if node_is_leaf
-                cluster_size_bound = cluster_size
-
                 # All BSs outside my cluster contribute irreducible interference.
                 sum_irreducible_interference_power!(aggregated, k, outside_all_BSs, interfering_powers)
             else
                 # The bounds depends on if this BS is clustered or not.
                 if i <= N_clustered
-                    # This BS is clustered.
-                    cluster_size_bound = clustered_BS_cluster_size_bound
-
                     # Clustered BSs outside my cluster contribute irreducible interference.
                     sum_irreducible_interference_power!(aggregated, k, outside_clustered_BSs, interfering_powers)
 
@@ -354,9 +332,6 @@ function bound!(node, channel, network, static_params, scenario_params,
                     sum_reducible_interference_power!(aggregated, k, unclustered_BSs, N_unclustered - N_available_slots,
                                                       interfering_powers, sub(scratch, 1:N_unclustered))
                 else
-                    # This BS is not clustered.
-                    cluster_size_bound = nonclustered_BS_cluster_size_bound
-
                     # I cannot join any BS that belong to a full cluster, so
                     # those BSs contribute irreducible interference.
                     sum_irreducible_interference_power!(aggregated, k, BSs_in_full_clusters, interfering_powers)
@@ -367,10 +342,40 @@ function bound!(node, channel, network, static_params, scenario_params,
                                                       interfering_powers, sub(scratch, 1:N_outside_BSs_in_nonfull_clusters))
                 end
             end
+            @inbounds rho_bound = desired_powers[k]/(sigma2s[k] + sum(aggregated))
 
-            # Throughput bound
-            @inbounds rho = desired_powers[k]/(sigma2s[k] + sum(aggregated))
-            throughput_bound = t(cluster_size_bound, SNRs[k], rho)
+            # Cluster size bound
+            if node_is_leaf
+                cluster_size_bound = cluster_size
+            else
+                # Use the globally optimal B, if there is one. Otherwise, find
+                # it, given the current rho bound.
+                if B != 0
+                    B_local = B
+                else
+                    @simd for b in 1:I
+                        @inbounds scratch[b] = t(b, rho_bound)::Float64
+                    end
+                    _, B_local = findmax(scratch)
+                end
+                if cluster_size < B_local
+                    # There is still space, so add more BSs to this cluster. We never want more than B
+                    # BSs in our clusters, because that is when the prelog starts going down again.
+                    if i <= N_clustered
+                        cluster_size_bound = min(cluster_size + N_unclustered, B_local)
+                    else
+                        cluster_size_bound = min(cluster_size + N_BSs_in_nonfull_clusters, B_local)
+                    end
+                else
+                    # We (potentially) already have too many BSs in this cluster,
+                    # thus our prelog can only go down by adding more. Bound the
+                    # prelog by our current value.
+                    cluster_size_bound = cluster_size
+                end
+            end
+
+            # Throughput bound (though unimodality and increasingness)
+            throughput_bound = t(cluster_size_bound, rho_bound)
             @simd for n = 1:d
                 @inbounds throughput_bounds[k,n] = throughput_bound
             end
