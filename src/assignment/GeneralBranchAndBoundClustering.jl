@@ -375,7 +375,7 @@ function bound!(node, channel, network, static_params, utility_params,
             end
 
             # Throughput bound (though unimodality and increasingness)
-            throughput_bound = t(cluster_size_bound, rho_bound)
+            throughput_bound = t(cluster_size_bound, rho_bound)::Float64
             @simd for n = 1:d
                 @inbounds throughput_bounds[k,n] = throughput_bound
             end
