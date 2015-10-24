@@ -11,7 +11,7 @@ max_cluster_size = (data["simulation_params"]["M"] + data["simulation_params"]["
 exhaustive_search_complexity = zeros(Int, length(data["Is"]))
 for i in data["Is"]
     stirlings = collect(CoordinatedPrecoding.Stirling2NumberIterator(i))
-    exhaustive_search_complexity[i] = sum(stirlings[iceil(i/max_cluster_size):end])
+    exhaustive_search_complexity[i] = sum(stirlings[cld(i, max_cluster_size):end])
 end
 
 # 8-class Set1
