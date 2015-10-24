@@ -257,6 +257,9 @@ function bound!(node, channel, network, static_params, scenario_params,
     I, K, Kc, M, N, d, Ps, sigma2s, assignment = static_params
     f, t, D, B = scenario_params
 
+    # Preallocate aggregated interfering powers
+    aggregated = fill(0., 2)
+
     # The BSs are grouped based on their position in the graph. If they are put
     # in a cluster, they are 'clustered', otherwise they are 'unclustered'.
     all_BSs = IntSet(1:I)
@@ -266,12 +269,12 @@ function bound!(node, channel, network, static_params, scenario_params,
     # For looping over clusters, we create a pseudo partition, where the
     # unclustered BSs belong to singleton blocks.
     pseudo_partition_a = Array(Int, I)
-    for i = 1:N_clustered
-        pseudo_partition_a[i] = node.a[i]
+    @simd for i = 1:N_clustered
+        @inbounds pseudo_partition_a[i] = node.a[i]
     end
     m = 1 + maximum(node.a)
-    for i = (N_clustered+1):I
-        pseudo_partition_a[i] = m + (i - N_clustered - 1)
+    @simd for i = (N_clustered+1):I
+        @inbounds pseudo_partition_a[i] = m + (i - N_clustered - 1)
     end
     pseudo_partition = Partition(pseudo_partition_a, skip_check=true)
 
@@ -328,13 +331,14 @@ function bound!(node, channel, network, static_params, scenario_params,
 
         # Get appropriate bounds for all MSs in this cluster.
         for i in block.elements; for k in served_MS_ids(i, assignment)
+            @inbounds aggregated[1] = 0.; @inbounds aggregated[2] = 0.
+
             # Leaves get true values, other nodes get bound.
             if node_is_leaf
                 cluster_size_bound = cluster_size
 
                 # All BSs outside my cluster contribute irreducible interference.
-                irreducible_interference_power = sum_irreducible_interference_power(k, outside_all_BSs, interfering_powers)
-                reducible_interference_power = 0.
+                sum_irreducible_interference_power!(aggregated, k, outside_all_BSs, interfering_powers)
             else
                 # The bounds depends on if this BS is clustered or not.
                 if i <= N_clustered
@@ -342,37 +346,33 @@ function bound!(node, channel, network, static_params, scenario_params,
                     cluster_size_bound = clustered_BS_cluster_size_bound
 
                     # Clustered BSs outside my cluster contribute irreducible interference.
-                    irreducible_interference_power =
-                        sum_irreducible_interference_power(k, outside_clustered_BSs, interfering_powers)
+                    sum_irreducible_interference_power!(aggregated, k, outside_clustered_BSs, interfering_powers)
 
                     # The bound is now due to picking the N_available_slots strongest interferers (that are not clustered)
                     # and assuming that this interference is reducible. This is a bound since we are not ensuring the
                     # disjointness of the clusters here.
-                    reducible_interference_power =
-                        sum_reducible_interference_power(k, unclustered_BSs, N_unclustered - N_available_slots,
-                                                         interfering_powers, sub(scratch, 1:N_unclustered))
+                    sum_reducible_interference_power!(aggregated, k, unclustered_BSs, N_unclustered - N_available_slots,
+                                                      interfering_powers, sub(scratch, 1:N_unclustered))
                 else
                     # This BS is not clustered.
                     cluster_size_bound = nonclustered_BS_cluster_size_bound
 
                     # I cannot join any BS that belong to a full cluster, so
                     # those BSs contribute irreducible interference.
-                    irreducible_interference_power =
-                        sum_irreducible_interference_power(k, BSs_in_full_clusters, interfering_powers)
+                    sum_irreducible_interference_power!(aggregated, k, BSs_in_full_clusters, interfering_powers)
 
                     # We now pick the N_available_slots strongest interferers (which do not belong to full clusters),
                     # and assume that this interference is reducible.
-                    reducible_interference_power =
-                        sum_reducible_interference_power(k, outside_BSs_in_nonfull_clusters, N_outside_BSs_in_nonfull_clusters - N_available_slots,
-                                                         interfering_powers, sub(scratch, 1:N_outside_BSs_in_nonfull_clusters))
+                    sum_reducible_interference_power!(aggregated, k, outside_BSs_in_nonfull_clusters, N_outside_BSs_in_nonfull_clusters - N_available_slots,
+                                                      interfering_powers, sub(scratch, 1:N_outside_BSs_in_nonfull_clusters))
                 end
             end
 
             # Throughput bound
-            rho = desired_powers[k]/(sigma2s[k] + irreducible_interference_power + reducible_interference_power)
+            @inbounds rho = desired_powers[k]/(sigma2s[k] + sum(aggregated))
             throughput_bound = t(cluster_size_bound, SNRs[k], rho)
-            for n = 1:d
-                throughput_bounds[k,n] = throughput_bound
+            @simd for n = 1:d
+                @inbounds throughput_bounds[k,n] = throughput_bound
             end
         end; end
     end
@@ -385,24 +385,20 @@ function bound!(node, channel, network, static_params, scenario_params,
     return throughput_bounds
 end
 
-function sum_irreducible_interference_power(k, from_BSs, interfering_powers)
-    s = Float64(0)
+function sum_irreducible_interference_power!(aggregated, k, from_BSs, interfering_powers)
     for j in from_BSs
-        s += interfering_powers[j,k]
+        @inbounds aggregated[1] += interfering_powers[j,k]
     end
-    s
 end
 
-function sum_reducible_interference_power(k, from_BSs, N_available, interfering_powers, reducible_interference_levels)
-    s = Float64(0)
+function sum_reducible_interference_power!(aggregated, k, from_BSs, N_available, interfering_powers, scratch)
     idx = 1
     for j in from_BSs
-        reducible_interference_levels[idx] = interfering_powers[j,k]
+        @inbounds scratch[idx] = interfering_powers[j,k]
         idx += 1
     end
-    sort!(reducible_interference_levels)
-    for idx in 1:N_available
-        s += reducible_interference_levels[idx]
+    sort!(scratch)
+    @simd for idx in 1:N_available
+        @inbounds aggregated[2] += scratch[idx]
     end
-    s
 end
