@@ -1,5 +1,3 @@
-VERSION >= v"0.4" && __precompile__()
-
 module OptimalBaseStationClustering
 
 using CoordinatedPrecoding
@@ -17,5 +15,13 @@ include("assignment/assignment.jl")
 include("assignment/GeneralBranchAndBoundClustering.jl")
 include("assignment/GeneralGreedyClustering.jl")
 include("misc/visualization.jl")
+
+##########################################################################
+# Logging defaults
+let
+    console = Lumberjack._lumber_mill.timber_trucks["console"]
+    Lumberjack.configure(console; mode = "warn")
+    Lumberjack.add_truck(Lumberjack.LumberjackTruck("default.log", "info"), "default")
+end
 
 end # module
