@@ -35,7 +35,7 @@ function GeneralExhaustiveSearchClustering(channel, network, f, t, D, B = 0)
         objective = f(throughputs_)
         if objective >= best_objective
             best_objective = objective
-            best_throughputs = throughputs
+            best_throughputs = throughputs_
             best_partition = partition
         end
     end
