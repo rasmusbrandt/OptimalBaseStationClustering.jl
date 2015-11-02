@@ -14,7 +14,7 @@ const beta_network_sdma = 0.5
 
 const design_ISD = 500
 const BS_density = sqrt(3)/2*design_ISD^2 # BSs per m^2, for hexagonal cells
-const I = 12; const Kc = 2
+const I = 10; const Kc = 2
 const M = 8; const N = 2; const d = 1
 const geography_width = 2000. # sqrt(I*BS_density)
 const MS_serving_BS_distance = Nullable(150.) # geography_width/10. = 161.1854897735313
@@ -35,6 +35,7 @@ _, B = findmax([ t(b, 1.) for b in 1:I ]) # Optimality of B is independent of rh
 f(ts) = sum(ts) # sum throughput
 
 BranchAndBoundClustering(channel, network) = GeneralBranchAndBoundClustering(channel, network, f, t, D, B)
+ExhaustiveSearchClustering(channel, network) = GeneralExhaustiveSearchClustering(channel, network, f, t, D, B)
 GreedyClustering(channel, network) = GeneralGreedyClustering(channel, network, f, t, D, B)
 
 # General
@@ -45,7 +46,7 @@ simulation_params = Dict(
     "M" => M, "N" => N, "d" => d,
     "geography_size" => (geography_width, geography_width),
     "MS_serving_BS_distance" => MS_serving_BS_distance,
-    "assignment_methods" => [ BranchAndBoundClustering, GreedyClustering ],
+    "assignment_methods" => [ BranchAndBoundClustering, ExhaustiveSearchClustering, GreedyClustering ],
     "aux_assignment_params" => Dict(
         "max_num_MSs_per_BS" => Kc,
 

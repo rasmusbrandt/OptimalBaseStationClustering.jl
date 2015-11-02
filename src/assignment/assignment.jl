@@ -6,16 +6,18 @@ function throughputs(partition, channel, static_params, utility_params)
 
     throughputs = zeros(Float64, K, d)
     for block in partition.blocks
-        outside_all_BSs = setdiff(IntSet(1:I), block.elements)
-        cluster_size = length(block.elements)
-        for i in block.elements; for k in served_MS_ids(i, assignment)
-            irreducible_interference_power = Float64(0)
-            for j in outside_all_BSs
-                irreducible_interference_power += interfering_powers[j,k]
-            end
-            rho = desired_powers[k]/(sigma2s[k] + irreducible_interference_power)
-            throughputs[k,:] = t(cluster_size, rho)
-        end; end
+        if length(block.elements) <= D
+            outside_all_BSs = setdiff(IntSet(1:I), block.elements)
+            cluster_size = length(block.elements)
+            for i in block.elements; for k in served_MS_ids(i, assignment)
+                irreducible_interference_power = Float64(0)
+                for j in outside_all_BSs
+                    irreducible_interference_power += interfering_powers[j,k]
+                end
+                rho = desired_powers[k]/(sigma2s[k] + irreducible_interference_power)
+                throughputs[k,:] = t(cluster_size, rho)
+            end; end
+        end
     end
     throughputs
 end

@@ -6,6 +6,7 @@ import Lumberjack, PyPlot
 export
     # assignment
     GeneralBranchAndBoundClustering,
+    GeneralExhaustiveSearchClustering,
     GeneralGreedyClustering,
 
     # misc
@@ -13,6 +14,7 @@ export
 
 include("assignment/assignment.jl")
 include("assignment/GeneralBranchAndBoundClustering.jl")
+include("assignment/GeneralExhaustiveSearchClustering.jl")
 include("assignment/GeneralGreedyClustering.jl")
 include("misc/visualization.jl")
 
