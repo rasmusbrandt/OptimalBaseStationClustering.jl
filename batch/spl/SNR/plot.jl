@@ -14,10 +14,6 @@ plot_params = Dict(
             ("throughputs",),
         ],
 
-        "CoalitionFormationClustering_AttachOrSupplant" => [
-            ("throughputs",),
-        ],
-
         "GreedyClustering" => [
             ("throughputs",),
         ],
@@ -67,9 +63,6 @@ ax[:plot](idp_vals, processed_data_mean["BranchAndBoundClustering"]["throughputs
 ax[:plot](idp_vals, processed_data_mean["GreedyClustering"]["throughputs"],
     color=colours[:green], linestyle="-", marker="^", markeredgecolor=colours[:green], markevery=3,
     label="Heuristic")
-ax[:plot](idp_vals, processed_data_mean["CoalitionFormationClustering_AttachOrSupplant"]["throughputs"],
-    color=colours[:purple], linestyle="-", marker="d", markeredgecolor=colours[:purple], markevery=3,
-    label="Coalition formation [x]")
 # ax[:plot](idp_vals, processed_data_mean["GreedyClustering_Single"]["throughputs"],
 #     color=colours[:green], linestyle="--",
 #     label="Heuristic (single)")

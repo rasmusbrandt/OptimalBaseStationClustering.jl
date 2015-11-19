@@ -17,8 +17,6 @@ simulation_params = Dict(
         BranchAndBoundClustering,
         GreedyClustering,
 
-        CoalitionFormationClustering_AttachOrSupplant,
-
         GrandCoalitionClustering,
         NoClustering,
     ],
