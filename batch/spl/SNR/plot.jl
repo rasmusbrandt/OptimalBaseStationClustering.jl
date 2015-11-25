@@ -6,28 +6,7 @@ using Compat, JLD, LaTeXStrings
 sim_name = "SNR"
 data = load("$(sim_name).jld")
 
-plot_params = Dict(
-    "objective" => :sum,
-
-    "methods" => Dict(
-        "BranchAndBoundClustering" => [
-            ("throughputs",),
-        ],
-
-        "GreedyClustering" => [
-            ("throughputs",),
-        ],
-
-        "GrandCoalitionClustering" => [
-            ("throughputs",),
-        ],
-
-        "NoClustering" => [
-            ("throughputs",),
-        ],
-    )
-)
-_, processed_data_mean, _ = postprocess(data["raw_assignment_results"], data["simulation_params"], plot_params)
+processed_data_mean = data["processed_data_mean"]
 idp_vals = data["simulation_params"]["independent_variable"][2]
 
 # 8-class Set1
