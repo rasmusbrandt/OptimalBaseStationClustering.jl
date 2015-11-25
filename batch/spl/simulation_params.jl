@@ -17,16 +17,18 @@ const MS_serving_BS_distance = Nullable(150.) # geography_width/10. = 161.185489
 
 const SNR_dB = 20.
 
-const Ndrops = 1
+const Ndrops = 250
 const Nsim = 1
 
 # Utility model and specialized branch and bound
 f1 = 1/I - (M + Kc*(N + d))/num_coherence_symbols
 f2 = -Kc*M/num_coherence_symbols
 alpha(C) = (f1 + f2*C)*C
-t(C, SNR, SINR) = (1 - beta_network_sdma)*alpha(C)*exp_times_E1(1 + SNR) + beta_network_sdma*exp_times_E1(1 + SINR)
+r1 = (1 - beta_network_sdma)*exp_times_E1(1 + 10^(SNR_dB/10))
+t(C, SINR) = alpha(C)*r1 + beta_network_sdma*exp_times_E1(1 + SINR)
 D = floor(Int, (M + N - d)/(Kc*d)) # from Liu2013
+_, B = findmax([ t(b, 1.) for b in 1:I ]) # Optimality of B is independent of rho, for this utility model
 f(ts) = sum(ts) # sum throughput
 
-BranchAndBoundClustering(channel, network) = GeneralBranchAndBoundClustering(channel, network, f, t, D)
-GreedyClustering(channel, network) = GeneralGreedyClustering(channel, network, f, t, D)
+BranchAndBoundClustering(channel, network) = GeneralBranchAndBoundClustering(channel, network, f, t, D, B)
+GreedyClustering(channel, network) = GeneralGreedyClustering(channel, network, f, t, D, B)

@@ -54,7 +54,7 @@ PyPlot.rc("ytick", labelsize=6)
 PyPlot.rc("legend", fancybox=true, fontsize=6)
 PyPlot.rc("figure", figsize=(3.50,1.1), dpi=125)
 
-len = length(processed_data_bounds_mean["BranchAndBoundClustering"]["upper_bound_evolution"]) # should be same for all
+len = length(processed_data_bounds_mean["BranchAndBoundClustering"]["upper_bound_evolution"])
 
 ##########################################################################
 # bounds
@@ -84,6 +84,7 @@ ax1 = fig[:add_axes]((0.12,0.24,0.88-0.12,0.95-0.24))
 
 tree_size = OptimalBaseStationClustering.subtree_size(1, 1, data["simulation_params"]["I"])
 fathomed_subtree_sizes_cum = cumsum(processed_data_fathom_mean["BranchAndBoundClustering"]["fathoming_evolution"])
+len = length(fathomed_subtree_sizes_cum)
 
 line1 = ax1[:plot](1:len, fathomed_subtree_sizes_cum, color=colours[:blue], linestyle="-", marker="o", markeredgecolor=colours[:blue], markevery=2_000)
 ax1[:set_xlabel]("Iterations")
