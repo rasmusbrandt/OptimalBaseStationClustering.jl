@@ -52,7 +52,7 @@ PyPlot.rc("axes", linewidth=0.5, labelsize=6)
 PyPlot.rc("xtick", labelsize=6)
 PyPlot.rc("ytick", labelsize=6)
 PyPlot.rc("legend", fancybox=true, fontsize=6)
-PyPlot.rc("figure", figsize=(3.50,1.1), dpi=125)
+PyPlot.rc("figure", figsize=(3.50,1.2), dpi=125)
 
 len = length(processed_data_bounds_mean["BranchAndBoundClustering"]["upper_bound_evolution"])
 
@@ -63,14 +63,15 @@ fig = PyPlot.figure()
 ax = fig[:add_axes]((0.12,0.24,0.88-0.12,0.95-0.24))
 
 ax[:plot](1:len, processed_data_bounds_mean["BranchAndBoundClustering"]["upper_bound_evolution"],
-    color=colours[:blue], linestyle=":", marker="v", markeredgecolor=colours[:blue], markevery=2_000,
+    color=colours[:blue], linestyle=":", marker="v", markeredgecolor=colours[:blue], markevery=50,
     label="Best upper bound")
 ax[:plot](1:len, processed_data_bounds_mean["BranchAndBoundClustering"]["lower_bound_evolution"],
-    color=colours[:blue], linestyle="-", marker="^", markeredgecolor=colours[:blue], markevery=2_000,
+    color=colours[:blue], linestyle="-", marker="^", markeredgecolor=colours[:blue], markevery=50,
     label="Incumbent")
 ax[:set_xlabel]("Iterations")
-ax[:set_ylabel]("S. throughput [bits/c.u]")
+ax[:set_ylabel]("Sum t'put [bits/c.u]")
 ax[:set_xlim](1,len)
+ax[:set_ylim](30,40)
 legend = ax[:legend](loc="upper right")
 legend_frame = legend[:get_frame]()
 PyPlot.setp(legend_frame, linewidth=0.5)
@@ -86,18 +87,19 @@ tree_size = OptimalBaseStationClustering.subtree_size(1, 1, data["simulation_par
 fathomed_subtree_sizes_cum = cumsum(processed_data_fathom_mean["BranchAndBoundClustering"]["fathoming_evolution"])
 len = length(fathomed_subtree_sizes_cum)
 
-line1 = ax1[:plot](1:len, fathomed_subtree_sizes_cum, color=colours[:blue], linestyle="-", marker="o", markeredgecolor=colours[:blue], markevery=2_000)
+line1 = ax1[:plot](1:len, fathomed_subtree_sizes_cum, color=colours[:blue], linestyle="-", marker="o", markeredgecolor=colours[:blue], markevery=50)
 ax1[:set_xlabel]("Iterations")
 ax1[:set_ylabel]("\\# of nodes pruned")
 ax1[:set_yscale]("log")
 
 ax2 = ax1[:twinx]()
-line2 = ax2[:plot](1:len, 100*fathomed_subtree_sizes_cum/tree_size, color=colours[:blue], linestyle="--", marker="d", markeredgecolor=colours[:blue], markevery=2_000)
+line2 = ax2[:plot](1:len, 100*fathomed_subtree_sizes_cum/tree_size, color=colours[:blue], linestyle="--", marker="d", markeredgecolor=colours[:blue], markevery=50)
+ax2[:plot](len, 100*fathomed_subtree_sizes_cum[end]/tree_size, color=colours[:blue], linestyle="--", marker="d", markeredgecolor=colours[:blue])
 ax2[:set_ylabel]("\\% of tree pruned")
-ax2[:set_ylim](0,100)
+ax2[:set_ylim](-5,105)
 ax2[:set_xlim](1,(1 + 1e-2)*len)
 
-legend = ax1[:legend]([ line1[1], line2[1] ], [ "Absolute number", "Percentage" ], loc="lower right")
+legend = ax1[:legend]([ line1[1], line2[1] ], [ "Absolute number", "Percentage" ], bbox_to_anchor=(0.8, 0.6))
 legend_frame = legend[:get_frame]()
 PyPlot.setp(legend_frame, linewidth=0.5)
 

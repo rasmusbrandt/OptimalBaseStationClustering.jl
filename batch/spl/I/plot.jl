@@ -35,7 +35,7 @@ PyPlot.rc("axes", linewidth=0.5, labelsize=6)
 PyPlot.rc("xtick", labelsize=6)
 PyPlot.rc("ytick", labelsize=6)
 PyPlot.rc("legend", fancybox=true, fontsize=6)
-PyPlot.rc("figure", figsize=(3.50,1.1), dpi=125)
+PyPlot.rc("figure", figsize=(3.50,1.2), dpi=125)
 
 # Plot it
 fig = PyPlot.figure()

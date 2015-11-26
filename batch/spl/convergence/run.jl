@@ -26,7 +26,7 @@ simulation_params = Dict(
 )
 
 # Simulate and save
-srand(38822)
+srand(338822)
 network =
     setup_random_large_scale_network(simulation_params["I"],
         simulation_params["Kc"], simulation_params["N"], simulation_params["M"],
