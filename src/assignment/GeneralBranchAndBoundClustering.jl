@@ -74,7 +74,7 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D, B = 0)
         abs_conv_crit = best_upper_bound - incumbent_objective
         rel_conv_crit = abs_conv_crit/incumbent_objective
         if abs_conv_crit <= max_abs_optimality_gap || rel_conv_crit <= max_rel_optimality_gap
-            # Lumberjack.debug("Converged.", { :abs_conv_crit => abs_conv_crit, :max_abs_optimality_gap => max_abs_optimality_gap })
+            # Lumberjack.debug("Converged.", Dict(:abs_conv_crit => abs_conv_crit, :max_abs_optimality_gap => max_abs_optimality_gap))
             premature_ending = true
             break
         end
@@ -95,13 +95,9 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D, B = 0)
                     incumbent_throughputs = throughput_bounds
                     incumbent_a = child.a
 
-                    # Lumberjack.debug("Found new incumbent solution.",
-                    #     { :node => child, :incumbent_objective => incumbent_objective }
-                    # )
+                    # Lumberjack.debug("Found new incumbent solution.", Dict(:node => child, :incumbent_objective => incumbent_objective))
                 else
-                    # Lumberjack.debug("Keeping node since upper bound is above incumbent value.",
-                    #     { :node => child, :incumbent_objective => incumbent_objective }
-                    # )
+                    # Lumberjack.debug("Keeping node since upper bound is above incumbent value.", Dict(:node => child, :incumbent_objective => incumbent_objective))
                     if branching_rule == :bfs
                         Base.Collections.heappush!(live, child, Base.Order.Reverse)
                     else
@@ -109,9 +105,7 @@ function GeneralBranchAndBoundClustering(channel, network, f, t, D, B = 0)
                     end
                 end
             else
-                # Lumberjack.debug("Discarding node since upper bound is below incumbent value.",
-                #     { :node => child, :incumbent_objective => incumbent_objective }
-                # )
+                # Lumberjack.debug("Discarding node since upper bound is below incumbent value.", Dict(:node => child, :incumbent_objective => incumbent_objective))
 
                 if store_evolution
                     fathomed_subtree_size += subtree_size(child, I) - 1 # minus one since we already explored child
@@ -176,7 +170,7 @@ function initial_incumbent(channel, network,
             incumbent_a = heuristic_results["a"]
             incumbent_objective = heuristic_objective
         end
-        # Lumberjack.debug("Potential incumbent throughputs calculated.", { :heuristic => heuristic, :incumbent_objective => incumbent_objective })
+        # Lumberjack.debug("Potential incumbent throughputs calculated.", Dict(:incumbent_objective => incumbent_objective))
 
         # Optimal solution from previous branch and bound round
         if has_aux_network_param(network, "GeneralBranchAndBoundClustering:cache:optimal_a")
@@ -225,7 +219,7 @@ function initialize_live(channel, network, static_params, utility_params,
     bound!(root, channel, network, static_params, utility_params,
            desired_powers, interfering_powers,
            zeros(Float64, get_num_BSs(network)))
-    # Lumberjack.debug("Root created.", { :node => root })
+    # Lumberjack.debug("Root created.", Dict(:node => root))
     return [ root ]
 end
 
@@ -241,7 +235,7 @@ function branch(parent)
         child = BranchAndBoundNode(child_a, parent.upper_bound)
         children[p] = child
 
-        # Lumberjack.debug("Branching.", { :node => child })
+        # Lumberjack.debug("Branching.", Dict(:node => child))
     end
 
     return children
@@ -386,7 +380,7 @@ function bound!(node, channel, network, static_params, utility_params,
     # Final system bound
     node.upper_bound = f(throughput_bounds)
 
-    # Lumberjack.debug("Bounding.", { :node => node })
+    # Lumberjack.debug("Bounding.", Dict(:node => node))
 
     return throughput_bounds
 end
