@@ -14,8 +14,9 @@ function throughputs(partition, channel, static_params, utility_params)
                 for j in outside_all_BSs
                     irreducible_interference_power += interfering_powers[j,k]
                 end
-                rho = desired_powers[k]/(sigma2s[k] + irreducible_interference_power)
-                throughputs[k,:] = t(cluster_size, rho)
+                SNR = desired_powers[k]/sigma2s[k]
+                SINR = desired_powers[k]/(sigma2s[k] + irreducible_interference_power)
+                throughputs[k,:] = t(cluster_size, SNR, SINR)
             end; end
         end
     end

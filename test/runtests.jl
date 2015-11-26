@@ -27,10 +27,10 @@ const Nsim = 1
 f1 = 1/I - (M + Kc*(N + d))/num_coherence_symbols
 f2 = -Kc*M/num_coherence_symbols
 alpha(C) = (f1 + f2*C)*C
-r1 = (1 - beta_network_sdma)*exp_times_E1(1 + 10^(SNR_dB/10))
-t(C, SINR) = alpha(C)*r1 + beta_network_sdma*exp_times_E1(1 + SINR)
+r1(SNR) = (1 - beta_network_sdma)*exp_times_E1(SNR)
+t(C, SNR, SINR) = d*(alpha(C)*r1(SNR) + beta_network_sdma*exp_times_E1(SINR))
 D = floor(Int, (M + N - d)/(Kc*d)) # from Liu2013
-_, B = findmax([ t(b, 1.) for b in 1:I ]) # Optimality of B is independent of rho, for this utility model
+_, B = findmax([ t(b, 1., 1.) for b in 1:I ]) # Optimality of B is independent of rho, for this utility model
 f(ts) = sum(ts) # sum throughput
 
 BranchAndBoundClustering(channel, network) = GeneralBranchAndBoundClustering(channel, network, f, t, D, B)

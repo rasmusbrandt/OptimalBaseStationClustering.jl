@@ -316,7 +316,7 @@ function bound!(node, channel, network, static_params, utility_params,
         for i in block.elements; for k in served_MS_ids(i, assignment)
             @inbounds aggregated[1] = 0.; @inbounds aggregated[2] = 0.
 
-            # Rho bound (solution to supermodular optimization problem)
+            # SINR bound (solution to supermodular optimization problem)
             if node_is_leaf
                 # All BSs outside my cluster contribute irreducible interference.
                 sum_irreducible_interference_power!(aggregated, k, outside_all_BSs, interfering_powers)
@@ -342,19 +342,20 @@ function bound!(node, channel, network, static_params, utility_params,
                                                       interfering_powers, sub(scratch, 1:N_outside_BSs_in_nonfull_clusters))
                 end
             end
-            @inbounds rho_bound = desired_powers[k]/(sigma2s[k] + sum(aggregated))
+            @inbounds SNR = desired_powers[k]/sigma2s[k]
+            @inbounds SINR_bound = desired_powers[k]/(sigma2s[k] + sum(aggregated))
 
             # Cluster size bound
             if node_is_leaf
                 cluster_size_bound = cluster_size
             else
                 # Use the globally optimal B, if there is one. Otherwise, find
-                # it, given the current rho bound.
+                # it, given the current SNR and SINR bound.
                 if B != 0
                     B_local = B
                 else
                     @simd for b in 1:I
-                        @inbounds scratch[b] = t(b, rho_bound)::Float64
+                        @inbounds scratch[b] = t(b, SNR, SINR_bound)::Float64
                     end
                     _, B_local = findmax(scratch)
                 end
@@ -375,7 +376,7 @@ function bound!(node, channel, network, static_params, utility_params,
             end
 
             # Throughput bound (though unimodality and increasingness)
-            throughput_bound = t(cluster_size_bound, rho_bound)::Float64
+            throughput_bound = t(cluster_size_bound, SNR, SINR_bound)::Float64
             @simd for n = 1:d
                 @inbounds throughput_bounds[k,n] = throughput_bound
             end
