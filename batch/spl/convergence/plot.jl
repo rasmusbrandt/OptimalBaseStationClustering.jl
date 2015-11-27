@@ -69,7 +69,7 @@ ax[:plot](1:len, processed_data_bounds_mean["BranchAndBoundClustering"]["lower_b
     color=colours[:blue], linestyle="-", marker="^", markeredgecolor=colours[:blue], markevery=50,
     label="Incumbent")
 ax[:set_xlabel]("Iterations")
-ax[:set_ylabel]("Sum t'put [bits/c.u]")
+ax[:set_ylabel]("Sum t'put [nats/s/Hz]")
 ax[:set_xlim](0,201)
 ax[:set_ylim](30,40)
 legend = ax[:legend](loc="upper right")

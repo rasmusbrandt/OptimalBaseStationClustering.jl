@@ -52,7 +52,7 @@ ax[:plot](idp_vals, processed_data_mean["NoClustering"]["throughputs"],
     color=colours[:pink], linestyle="-", marker="x", markeredgecolor=colours[:pink], markevery=3,
     label="No clustering")
 ax[:set_xlabel]("Signal-to-noise ratio [dB]")
-ax[:set_ylabel]("S. throughput [bits/c.u]")
+ax[:set_ylabel]("Sum t'put [nats/s/Hz]")
 legend = ax[:legend](loc="upper left")
 legend_frame = legend[:get_frame]()
 PyPlot.setp(legend_frame, linewidth=0.5)
