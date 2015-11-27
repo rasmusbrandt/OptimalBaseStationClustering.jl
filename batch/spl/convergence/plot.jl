@@ -70,7 +70,7 @@ ax[:plot](1:len, processed_data_bounds_mean["BranchAndBoundClustering"]["lower_b
     label="Incumbent")
 ax[:set_xlabel]("Iterations")
 ax[:set_ylabel]("Sum t'put [bits/c.u]")
-ax[:set_xlim](1,len)
+ax[:set_xlim](0,201)
 ax[:set_ylim](30,40)
 legend = ax[:legend](loc="upper right")
 legend_frame = legend[:get_frame]()
@@ -97,7 +97,7 @@ line2 = ax2[:plot](1:len, 100*fathomed_subtree_sizes_cum/tree_size, color=colour
 ax2[:plot](len, 100*fathomed_subtree_sizes_cum[end]/tree_size, color=colours[:blue], linestyle="--", marker="d", markeredgecolor=colours[:blue])
 ax2[:set_ylabel]("\\% of tree pruned")
 ax2[:set_ylim](-5,105)
-ax2[:set_xlim](1,(1 + 1e-2)*len)
+ax2[:set_xlim](0,201)
 
 legend = ax1[:legend]([ line1[1], line2[1] ], [ "Absolute number", "Percentage" ], bbox_to_anchor=(0.8, 0.6))
 legend_frame = legend[:get_frame]()

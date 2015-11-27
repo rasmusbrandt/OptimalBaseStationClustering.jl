@@ -51,7 +51,7 @@ ax[:plot](data["Is"], mean(data["results"][:,:,2], 2),
     color=colours[:green], linestyle="-", marker="^", markeredgecolor=colours[:green], markevery=4,
     label="Heuristic")
 ax[:set_xlabel](L"Number of BSs $I$")
-ax[:set_ylabel]("Average complexity")
+ax[:set_ylabel]("Average \\# iterations")
 ax[:set_yscale]("log")
 legend = ax[:legend](loc="upper left")
 legend_frame = legend[:get_frame]()
