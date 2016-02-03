@@ -20,8 +20,7 @@ const MS_serving_BS_distance = Nullable(150.) # geography_width/10. = 161.185489
 
 const SNR_dB = 30
 
-const Ndrops = 1
-const Nsim = 1
+const Ndrops = 100
 
 # Utility model and specialized branch and bound
 f1 = 1/I - (M + Kc*(N + d))/num_coherence_symbols
@@ -39,7 +38,7 @@ GreedyClustering(channel, network) = GeneralGreedyClustering(channel, network, f
 
 # General
 simulation_params = Dict(
-    "Ndrops" => 10, "Nsim" => 1,
+    "Ndrops" => Ndrops, "Nsim" => 1,
     "I" => I, "Kc" => Kc,
     "M" => M, "N" => N, "d" => d,
     "geography_size" => (geography_width, geography_width),
