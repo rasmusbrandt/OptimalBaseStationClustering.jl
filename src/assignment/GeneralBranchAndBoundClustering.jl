@@ -359,7 +359,7 @@ function bound!(node, channel, network, static_params, utility_params,
                     if i <= N_clustered
                         cluster_size_bound = min(cluster_size + N_unclustered, B_local)
                     else
-                        cluster_size_bound = min(cluster_size + N_BSs_in_nonfull_clusters, B_local)
+                        cluster_size_bound = min(N_BSs_in_nonfull_clusters, B_local)
                     end
                 else
                     # We (potentially) already have too many BSs in this cluster,
