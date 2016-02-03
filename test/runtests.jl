@@ -30,76 +30,77 @@ r1(SNR) = (1 - beta_network_sdma)*exp_times_E1(SNR)
 t(C, SNR, SINR) = d*(alpha(C)*r1(SNR) + beta_network_sdma*exp_times_E1(SINR))
 D = floor(Int, (M + N - d)/(Kc*d)) # from Liu2013
 _, B = findmax([ t(b, 1., 1.) for b in 1:I ]) # Optimality of B is independent of rho, for this utility model
-f(ts) = sum(ts) # sum throughput
+fs = [sum, minimum]
 
-BranchAndBoundClustering(channel, network) = GeneralBranchAndBoundClustering(channel, network, f, t, D, B)
-ExhaustiveSearchClustering(channel, network) = GeneralExhaustiveSearchClustering(channel, network, f, t, D, B)
-GreedyClustering(channel, network) = GeneralGreedyClustering(channel, network, f, t, D, B)
+for f in fs
+    println("===\nTesting f = $f\n===")
 
-# General
-simulation_params = Dict(
-    "Ndrops" => Ndrops, "Nsim" => 1,
-    "I" => I, "Kc" => Kc,
-    "M" => M, "N" => N, "d" => d,
-    "geography_size" => (geography_width, geography_width),
-    "MS_serving_BS_distance" => MS_serving_BS_distance,
-    "assignment_methods" => [ BranchAndBoundClustering, ExhaustiveSearchClustering, GreedyClustering ],
-    "precoding_methods" => [ NoPrecoding ],
-    "independent_variable" => (set_average_SNRs_dB!, [SNR_dB]),
-)
+    BranchAndBoundClustering(channel, network) = GeneralBranchAndBoundClustering(channel, network, f, t, D, B)
+    ExhaustiveSearchClustering(channel, network) = GeneralExhaustiveSearchClustering(channel, network, f, t, D, B)
+    GreedyClustering(channel, network) = GeneralGreedyClustering(channel, network, f, t, D, B)
 
-settings = [
-    Dict("max_num_MSs_per_BS" => Kc,
-        "GeneralBranchAndBoundClustering:branching_rule" => :bfs,
-        "GeneralBranchAndBoundClustering:improve_initial_incumbent" => true,
-        "GeneralBranchAndBoundClustering:max_abs_optimality_gap" => 0.,
-        "GeneralBranchAndBoundClustering:max_rel_optimality_gap" => 0.,
-        "GeneralBranchAndBoundClustering:store_evolution" => false
-    ),
-    Dict("max_num_MSs_per_BS" => Kc,
-        "GeneralBranchAndBoundClustering:branching_rule" => :dfs,
-        "GeneralBranchAndBoundClustering:improve_initial_incumbent" => true,
-        "GeneralBranchAndBoundClustering:max_abs_optimality_gap" => 0.,
-        "GeneralBranchAndBoundClustering:max_rel_optimality_gap" => 0.,
-        "GeneralBranchAndBoundClustering:store_evolution" => false
-    ),
-    Dict("max_num_MSs_per_BS" => Kc,
-        "GeneralBranchAndBoundClustering:branching_rule" => :bfs,
-        "GeneralBranchAndBoundClustering:improve_initial_incumbent" => false,
-        "GeneralBranchAndBoundClustering:max_abs_optimality_gap" => 0.,
-        "GeneralBranchAndBoundClustering:max_rel_optimality_gap" => 0.,
-        "GeneralBranchAndBoundClustering:store_evolution" => false
-    ),
-    Dict("max_num_MSs_per_BS" => Kc,
-        "GeneralBranchAndBoundClustering:branching_rule" => :dfs,
-        "GeneralBranchAndBoundClustering:improve_initial_incumbent" => false,
-        "GeneralBranchAndBoundClustering:max_abs_optimality_gap" => 0.,
-        "GeneralBranchAndBoundClustering:max_rel_optimality_gap" => 0.,
-        "GeneralBranchAndBoundClustering:store_evolution" => false
-    ),
-]
+    # General
+    simulation_params = Dict(
+        "Ndrops" => Ndrops, "Nsim" => 1,
+        "I" => I, "Kc" => Kc,
+        "M" => M, "N" => N, "d" => d,
+        "geography_size" => (geography_width, geography_width),
+        "MS_serving_BS_distance" => MS_serving_BS_distance,
+        "assignment_methods" => [ BranchAndBoundClustering, ExhaustiveSearchClustering, GreedyClustering ],
+        "precoding_methods" => [ NoPrecoding ],
+        "independent_variable" => (set_average_SNRs_dB!, [SNR_dB]),
+    )
 
-for s in settings
-    simulation_params["aux_assignment_params"] = s
+    settings = [
+        Dict("max_num_MSs_per_BS" => Kc,
+            "GeneralBranchAndBoundClustering:branching_rule" => :bfs,
+            "GeneralBranchAndBoundClustering:improve_initial_incumbent" => true,
+            "GeneralBranchAndBoundClustering:max_abs_optimality_gap" => 0.,
+            "GeneralBranchAndBoundClustering:max_rel_optimality_gap" => 0.,
+            "GeneralBranchAndBoundClustering:store_evolution" => false
+        ),
+        Dict("max_num_MSs_per_BS" => Kc,
+            "GeneralBranchAndBoundClustering:branching_rule" => :dfs,
+            "GeneralBranchAndBoundClustering:improve_initial_incumbent" => true,
+            "GeneralBranchAndBoundClustering:max_abs_optimality_gap" => 0.,
+            "GeneralBranchAndBoundClustering:max_rel_optimality_gap" => 0.,
+            "GeneralBranchAndBoundClustering:store_evolution" => false
+        ),
+        Dict("max_num_MSs_per_BS" => Kc,
+            "GeneralBranchAndBoundClustering:branching_rule" => :bfs,
+            "GeneralBranchAndBoundClustering:improve_initial_incumbent" => false,
+            "GeneralBranchAndBoundClustering:max_abs_optimality_gap" => 0.,
+            "GeneralBranchAndBoundClustering:max_rel_optimality_gap" => 0.,
+            "GeneralBranchAndBoundClustering:store_evolution" => false
+        ),
+        Dict("max_num_MSs_per_BS" => Kc,
+            "GeneralBranchAndBoundClustering:branching_rule" => :dfs,
+            "GeneralBranchAndBoundClustering:improve_initial_incumbent" => false,
+            "GeneralBranchAndBoundClustering:max_abs_optimality_gap" => 0.,
+            "GeneralBranchAndBoundClustering:max_rel_optimality_gap" => 0.,
+            "GeneralBranchAndBoundClustering:store_evolution" => false
+        ),
+    ]
 
-    network =
-        setup_random_large_scale_network(simulation_params["I"],
-            simulation_params["Kc"], simulation_params["N"], simulation_params["M"],
-            num_streams=simulation_params["d"],
-            geography_size=simulation_params["geography_size"],
-            MS_serving_BS_distance=simulation_params["MS_serving_BS_distance"])
+    for s in settings
+        simulation_params["aux_assignment_params"] = s
 
-    _, raw_assignment_results =
-        simulate(network, simulation_params, loop_over=:assignment_methods)
+        network =
+            setup_random_large_scale_network(simulation_params["I"],
+                simulation_params["Kc"], simulation_params["N"], simulation_params["M"],
+                num_streams=simulation_params["d"],
+                geography_size=simulation_params["geography_size"],
+                MS_serving_BS_distance=simulation_params["MS_serving_BS_distance"])
 
-    for i in eachindex(raw_assignment_results.simulation_results)
-        b1 = raw_assignment_results.simulation_results[i]["BranchAndBoundClustering"]["throughputs"]
-        b2 = raw_assignment_results.simulation_results[i]["BranchAndBoundClustering"]["a"]
-        e1 = raw_assignment_results.simulation_results[i]["ExhaustiveSearchClustering"]["throughputs"]
-        e2 = raw_assignment_results.simulation_results[i]["ExhaustiveSearchClustering"]["a"]
-        g = raw_assignment_results.simulation_results[i]["GreedyClustering"]["throughputs"]
-        @test_approx_eq b1 e1
-        @test all(b2 .== e2)
-        @test f(g) <= f(e1)
+        _, raw_assignment_results =
+            simulate(network, simulation_params, loop_over=:assignment_methods)
+
+        for i in eachindex(raw_assignment_results.simulation_results)
+            b1 = raw_assignment_results.simulation_results[i]["BranchAndBoundClustering"]["throughputs"]
+            e1 = raw_assignment_results.simulation_results[i]["ExhaustiveSearchClustering"]["throughputs"]
+            g = raw_assignment_results.simulation_results[i]["GreedyClustering"]["throughputs"]
+            @test f(b1) == f(e1)
+            @test f(g) <= f(e1)
+        end
     end
 end
