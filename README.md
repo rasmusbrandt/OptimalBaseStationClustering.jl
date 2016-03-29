@@ -19,7 +19,7 @@ The results in the SPL paper are available in the `batch/spl` subdirectory.
 
 ### Software Dependencies
 * [CoordinatedPrecoding.jl][CoordinatedPrecodingJL] is used as a supporting framework for the simulations.
-* [DistributedBaseStationClustering.jl][DistributedBaseStationClusteringJL] is used for the definition of a throughput model.
+* [DistributedBaseStationClustering.jl][DistributedBaseStationClusteringJL] (`tsipn2016` branch) is used for the definition of a throughput model.
 
 ## License and referencing
 This source code is licensed under the [GPLv2][gplv2] license. If you in any way
