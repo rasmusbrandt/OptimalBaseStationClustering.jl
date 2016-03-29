@@ -1,7 +1,7 @@
 # OptimalBaseStationClustering.jl
 
 **OptimalBaseStationClustering.jl** is the simulation environment for
-> [R. Brandt][rabr5411], [R. Mochaourab][ramimo] and [M. Bengtsson][matben], "Globally optimal base station clustering in interference alignment-based multicell networks", _IEEE Signal Processing Letters_, To appear.
+> [R. Brandt][rabr5411], [R. Mochaourab][ramimo] and [M. Bengtsson][matben], "[Globally optimal base station clustering in interference alignment-based multicell networks](http://arxiv.org/pdf/1602.08273)", _IEEE Signal Processing Letters_, vol. 23, no. 4, pages 512–516, 2016.
 
 It provides all the simulation code and scripts required to reproduce the figures from the papers.
 
@@ -27,10 +27,13 @@ use this code for research that results in publications, please cite our
 original article. The following [Bibtex][bibtex] entry can be used.
 ```
 @Article{Brandt2016,
-  Title                    = {Globally optimal base station clustering in interference alignment-based multicell networks},
+  Title                    = {Globally Optimal Base Station Clustering in Interference Alignment-Based Multicell Networks},
   Author                   = {Rasmus Brandt and Rami Mochaourab and Mats Bengtsson},
-  Journal                  = {Accepted to IEEE Signal Processing Letters},
-  Year                     = {2016}
+  Journal                  = IEEE_J_SPL,
+  Year                     = {2016},
+  Number                   = {4},
+  Pages                    = {512--516},
+  Volume                   = {23}
 }
 ```
 
